@@ -48,7 +48,7 @@
   console.log(maxTrips);
   console.log(maxSelf);
   
-  var max = Math.max.apply(null, od.map(function(row){ return Math.max.apply(Math, row); }));
+  // var max = Math.max.apply(null, od.map(function(row){ return Math.max.apply(Math, row); }));
 
   function getPointColor(d) {
     return d > 0.9 ? '#800026' :
@@ -69,27 +69,36 @@
       opacity: 1,
       fillOpacity: 0.8
       };
+      console.log(d);
     return options
   }
 
   function getLineStyle(d) {
     var options = {
       color: getPointColor(d),
-      weight: 10*d,
-      opacity: 0.7
+      weight: 5*d,
+      opacity: 0.3
       };
     return options
   }
     
-  $.getJSON("zones.geojson",function(zoneData){
-    L.geoJson( zoneData,{
-      pointToLayer: function (feature, latlng) {
-        var id = parseInt(feature.properties.id)
-        var selfFlow= od[id][id]
-        return L.circleMarker(latlng, getPointStyle(Math.sqrt(selfFlow/maxSelf)));
-    }
-	}).addTo(map);
-  });
+ //  $.getJSON("zones.geojson",function(zoneData){
+ //    L.geoJson( zoneData,{
+ //      pointToLayer: function (feature, latlng) {
+ //        var id = parseInt(feature.properties.id)
+ //        console.log(id)
+ //        var selfFlow= od[id][id]
+ //        return L.circleMarker(latlng, getPointStyle(Math.sqrt(selfFlow/maxSelf)));
+ //    }
+	// }).addTo(map);
+ //  });
+
+  for (i=0; i<od.length; i++){
+    var selfFlow= od[i][i]
+    var loc= new L.LatLng(zones.features[i].geometry.coordinates[1], zones.features[i].geometry.coordinates[0])
+    var circ =L.circleMarker(loc, getPointStyle(Math.sqrt(selfFlow/maxSelf)));
+    map.addLayer(circ);
+  }
 
 	for (i=0; i<od.length; i++){
 		for (j=0; j<od.length; j++){
