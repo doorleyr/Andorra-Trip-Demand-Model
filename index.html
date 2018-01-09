@@ -10,13 +10,65 @@
   <script type="text/javascript" src="zones.js"></script>
   <style>
     #map{ height: 100% }
+    .slidecontainer {
+    width: 100%;
+}
+
+.slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 15px;
+    border-radius: 5px;
+    background: #d3d3d3;
+    outline: none;
+    opacity: 0.7;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+}
+
+.slider:hover {
+    opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: #4CAF50;
+    cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    background: #4CAF50;
+    cursor: pointer;
+}
   </style>
 </head>
 <body>
  
   <div id="map"></div>
+
+  <h1>Residential</h1>
+  <div class="""slidecontainer">
+    <input type="range" min="0" max="10" value="0" class="slider" id="resRange">
+    <p>Value: <span id="resVal"></span></p>
+  </div>
+
+  <h1>Office</h1>
+  <div class="""slidecontainer">
+    <input type="range" min="0" max="10" value="0" class="slider" id="offRange">
+    <p>Value: <span id="offVal"></span></p>
+  </div>
  
   <script>
+  console.log(od.length)
+  console.log(od[1][1])
+
  
   // initialize the map
   var map = L.map('map').setView([42.506317 , 1.521835], 13);
@@ -46,9 +98,6 @@
 		}
 	}
 
-
-  console.log(maxTrips);
-  console.log(maxSelf);
   
   // var max = Math.max.apply(null, od.map(function(row){ return Math.max.apply(Math, row); }));
 
@@ -71,7 +120,6 @@
       opacity: 1,
       fillOpacity: 0.8
       };
-      console.log(d);
     return options
   }
 
@@ -94,13 +142,16 @@
  //    }
 	// }).addTo(map);
  //  });
+  zoneCircs=L.featureGroup().addTo(map);
 
   for (i=0; i<od.length; i++){
     var selfFlow= od[i][i]
     var loc= new L.LatLng(zones.features[i].geometry.coordinates[1], zones.features[i].geometry.coordinates[0])
     var circ =L.circleMarker(loc, getPointStyle(Math.sqrt(selfFlow/maxSelf)));
-    map.addLayer(circ);
+    circ.addTo(zoneCircs);
   }
+
+  lines=L.featureGroup().addTo(map);
 
 	for (i=0; i<od.length; i++){
 		for (j=0; j<od.length; j++){
@@ -110,15 +161,42 @@
 					var line = [
 					new L.LatLng(zones.features[i].geometry.coordinates[1], zones.features[i].geometry.coordinates[0]),
 					new L.LatLng(zones.features[j].geometry.coordinates[1], zones.features[j].geometry.coordinates[0])]
-					//console.log(trips/max);
-
 					var polyline = new L.Polyline(line, getLineStyle(Math.sqrt(trips/maxTrips)));
-					map.addLayer(polyline);
+          polyline.addTo(lines)
+					// map.addLayer(polyline);
 				}
 
 			}
 		}
 	}
+
+  var resSlider = document.getElementById("resRange");
+  var resOutput = document.getElementById("resVal");
+  resOutput.innerHTML = resSlider.value;
+  
+
+  var offSlider = document.getElementById("offRange");
+  var offOutput = document.getElementById("offVal");
+  offOutput.innerHTML = offSlider.value;
+
+  function updateMap(res, off){
+    map.removeLayer(lines);
+    map.removeLayer(zoneCircs);
+
+
+  }
+
+  resSlider.oninput = function() {
+    resOutput.innerHTML = this.value;
+    updateMap(resOutput, offOutput);
+    console.log(resOutput)
+    console.log(offOutput)
+  }
+
+  
+  offSlider.oninput = function() {
+    offOutput.innerHTML = this.value;
+  }
  
   </script>
 </body>
