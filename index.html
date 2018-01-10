@@ -188,7 +188,7 @@
     targetRowSums[cm]*=resRatio
     // scale the cm row and column
     var newOd=od.map(x => x.slice())
-    console.log(newOd)
+    console.log(newOd[cm])
     console.log(resRatio)
     for (i=0; i<newOd.length; i++){
       newOd[cm][i]*=resRatio
