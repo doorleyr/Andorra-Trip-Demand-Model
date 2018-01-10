@@ -188,6 +188,8 @@
     targetRowSums[cm]*=resRatio
     // scale the cm row and column
     var newOd=od.map(x => x.slice())
+    console.log(newOd)
+    console.log(resRatio)
     for (i=0; i<newOd.length; i++){
       newOd[cm][i]*=resRatio
       newOd[i][cm]*=offRatio
@@ -211,8 +213,6 @@
 
     // draw again
     //zoneCircs=L.featureGroup().addTo(map);
-    console.log(od)
-    console.log(newOd)
 
     for (i=0; i<newOd.length; i++){
       var selfFlow= newOd[i][i]
