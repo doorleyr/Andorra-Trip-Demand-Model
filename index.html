@@ -3,6 +3,7 @@
   <title>A Leaflet map!</title>
   <link rel="stylesheet" href="https://npmcdn.com/leaflet@0.7.7/dist/leaflet.css" />
   <script src="https://npmcdn.com/leaflet@0.7.7/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.19.0/math.js"></script>
   <!-- <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css"/>
   <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script> -->
   <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
@@ -49,6 +50,7 @@
 }
   </style>
 </head>
+
 <body>
  
   <div id="map"></div>
@@ -66,8 +68,7 @@
   </div>
  
   <script>
-  console.log(od.length)
-  console.log(od[1][1])
+
 
  
   // initialize the map
@@ -80,11 +81,18 @@
     maxZoom: 19
   }).addTo(map);
 
-  //get the max trips and max self flows
+  //get the max trips and max self flows and find the city matrix zones
+  var cm=[];
   var maxTrips=0;
   var maxSelf=0;
+  var initialRowSums=[];
   for (i=0; i<od.length; i++){
+    if (zones.features[i].properties.cityMatrix){
+      cm.push(i)
+    }
+    rSum=0
 		for (j=0; j<od.length; j++){
+      rSum+=od[i][j]
 			if (i==j){
 				if (od[i][j]>maxSelf){
 					maxSelf=od[i][j];
@@ -96,8 +104,8 @@
 				}
 			}
 		}
+    initialRowSums.push(rSum)
 	}
-
   
   // var max = Math.max.apply(null, od.map(function(row){ return Math.max.apply(Math, row); }));
 
@@ -132,16 +140,6 @@
     return options
   }
     
- //  $.getJSON("zones.geojson",function(zoneData){
- //    L.geoJson( zoneData,{
- //      pointToLayer: function (feature, latlng) {
- //        var id = parseInt(feature.properties.id)
- //        console.log(id)
- //        var selfFlow= od[id][id]
- //        return L.circleMarker(latlng, getPointStyle(Math.sqrt(selfFlow/maxSelf)));
- //    }
-	// }).addTo(map);
- //  });
   zoneCircs=L.featureGroup().addTo(map);
 
   for (i=0; i<od.length; i++){
@@ -180,22 +178,80 @@
   offOutput.innerHTML = offSlider.value;
 
   function updateMap(res, off){
-    map.removeLayer(lines);
-    map.removeLayer(zoneCircs);
+    resRatio=1+res/10
+    offRatio=1+off/10
+    // map.removeLayer(lines);
+    // map.removeLayer(zoneCircs);
+    lines.clearLayers()
+    zoneCircs.clearLayers()
+    targetRowSums=initialRowSums.slice(0)
+    targetRowSums[cm]*=resRatio
+    // scale the cm row and column
+    var newOd=od.map(x => x.slice())
+    for (i=0; i<newOd.length; i++){
+      newOd[cm][i]*=resRatio
+      newOd[i][cm]*=offRatio
+    }
+    
+    // get the scale factor for each row and correct it
+    
+    for (i=0; i<newOd.length; i++){
+      rSum=0
+      for (j=0; j<newOd.length; j++){
+        rSum+=newOd[i][j]
+      }
+      if (rSum>0)
+        {sf=targetRowSums[i]/rSum}
+      else 
+        {sf=1}
+      for (j=0; j<newOd.length; j++){
+        newOd[i][j]*=sf
+      }
+    }
+
+    // draw again
+    //zoneCircs=L.featureGroup().addTo(map);
+    console.log(od)
+    console.log(newOd)
+
+    for (i=0; i<newOd.length; i++){
+      var selfFlow= newOd[i][i]
+      var loc= new L.LatLng(zones.features[i].geometry.coordinates[1], zones.features[i].geometry.coordinates[0])
+      var circ =L.circleMarker(loc, getPointStyle(Math.sqrt(selfFlow/maxSelf)));
+      circ.addTo(zoneCircs);
+    }
+
+    //lines=L.featureGroup().addTo(map);
+
+    for (i=0; i<newOd.length; i++){
+      for (j=0; j<newOd.length; j++){
+        if (i!=j){
+          var trips=newOd[i][j]
+          if (trips>0){
+            var line = [
+            new L.LatLng(zones.features[i].geometry.coordinates[1], zones.features[i].geometry.coordinates[0]),
+            new L.LatLng(zones.features[j].geometry.coordinates[1], zones.features[j].geometry.coordinates[0])]
+            var polyline = new L.Polyline(line, getLineStyle(Math.sqrt(trips/maxTrips)));
+            polyline.addTo(lines)
+            // map.addLayer(polyline);
+          }
+
+        }
+      }
+    }
 
 
   }
 
   resSlider.oninput = function() {
     resOutput.innerHTML = this.value;
-    updateMap(resOutput, offOutput);
-    console.log(resOutput)
-    console.log(offOutput)
+    updateMap(resOutput.innerHTML, offOutput.innerHTML);
   }
 
   
   offSlider.oninput = function() {
     offOutput.innerHTML = this.value;
+    updateMap(resOutput.innerHTML, offOutput.innerHTML);
   }
  
   </script>
